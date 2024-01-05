@@ -1,2 +1,2 @@
 # __init__.py
-from CarDpy.Data_Sorting import Diffusion
+from cardpy.Data_Sorting import Diffusion
