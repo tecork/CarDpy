@@ -1,4 +1,4 @@
-def IntERCOMS_GUI(original_matrix, mean_diffusivity, primary_eigenvector, line_width = None):
+def IntERCOMS_GUI(original_matrix, mean_diffusivity, primary_eigenvector, Line_Width = None):
     from   sys                               import platform
     import tkinter                           as tk
     import matplotlib.pyplot                 as plt
@@ -6,7 +6,7 @@ def IntERCOMS_GUI(original_matrix, mean_diffusivity, primary_eigenvector, line_w
     from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     from   RangeSlider.RangeSlider           import RangeSliderV
     import sys
-    from   CarDpy.Colormaps.Diffusion        import cDTI_Colormaps_Generator
+    from   cardpy.Colormaps                  import cDTI_Colormaps_Generator
     from   screeninfo import get_monitors
 
     
@@ -45,10 +45,10 @@ def IntERCOMS_GUI(original_matrix, mean_diffusivity, primary_eigenvector, line_w
     MD_Map     = mean_diffusivity
     E1_Map     = primary_eigenvector
     cDTI_cmaps = cDTI_Colormaps_Generator()
-    if line_width == None:
+    if Line_Width == None:
         line_width = int(np.round(monitor_scale * 10))
     else:
-        line_width = line_width
+        line_width = Line_Width
     
     if matrix.shape[0] > matrix.shape[1]:
         matrix_ratio = matrix.shape[1] / matrix.shape[0]
@@ -859,3 +859,46 @@ def update_plots(val):
     dummy5.spines.right.set_visible(False)
 
     dummy_canvas3.draw()
+    
+def IntERCOMS_Mask_Making(matrix, Endo_Centers, Endo_Axes, Epi_Centers, Epi_Axes):
+    import cv2
+    import numpy as np
+    rows = matrix.shape[0]
+    cols = matrix.shape[1]
+    slcs = matrix.shape[2]
+    
+    myocardium_mask = np.zeros([rows, cols, slcs])
+    blood_pool_mask = np.zeros([rows, cols, slcs])
+    Myo_BP_mask     = np.zeros([rows, cols, slcs])
+    
+    for slc in range(slcs):
+        image1             = np.zeros([rows, cols])
+        center_coordinates = Epi_Centers[slc]
+        axesLength         = Epi_Axes[slc]
+        angle              = 0
+        startAngle         = 0
+        endAngle           = 360
+        color              = (255, 0, 0)
+        thickness          = -1
+        epi_image = cv2.ellipse(image1,
+                                (center_coordinates[1], center_coordinates[0]),
+                                (axesLength[1], axesLength[0]),
+                                angle, startAngle, endAngle, 1, thickness)
+        image2             = np.zeros([rows, cols])
+        center_coordinates = Endo_Centers[slc]
+        axesLength         = Endo_Axes[slc]
+        angle              = 0
+        startAngle         = 0
+        endAngle           = 360
+        color              = (255, 0, 0)
+        thickness          = -1
+        endo_image = cv2.ellipse(image2,
+                                 (center_coordinates[1], center_coordinates[0]),
+                                 (axesLength[1], axesLength[0]),
+                                 angle, startAngle, endAngle, 1, thickness)
+        
+        myocardium_mask[:, :, slc] = epi_image - endo_image
+        blood_pool_mask[:, :, slc] = endo_image
+        Myo_BP_mask[:, :, slc]     = epi_image
+        del endo_image, epi_image
+    return [myocardium_mask, Myo_BP_mask, blood_pool_mask]
